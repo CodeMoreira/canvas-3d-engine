@@ -4,7 +4,8 @@ class CanvasDraw {
   // Textures
   colors = {
     base: "black",
-    line: "white",
+    line: "red",
+    primary: "white",
   };
 
   constructor(screenWidth, screenHeight) {
@@ -41,6 +42,16 @@ class CanvasDraw {
     this.DrawLine(tri[0], tri[1], color);
     this.DrawLine(tri[1], tri[2], color);
     this.DrawLine(tri[2], tri[0], color);
+  }
+
+  FillTriangle(tri, color) {
+    this.ctx.beginPath();
+    this.ctx.moveTo(tri[0].x, tri[0].y);
+    this.ctx.lineTo(tri[1].x, tri[1].y);
+    this.ctx.lineTo(tri[2].x, tri[2].y);
+    this.ctx.lineTo(tri[0].x, tri[0].y);
+    this.ctx.fillStyle = color;
+    this.ctx.fill();
   }
 }
 
@@ -270,6 +281,7 @@ class Engine3D extends CanvasDraw {
         }
 
         // Draw the triangle on the canvas
+        this.FillTriangle(triProjected, this.colors.primary);
         this.DrawTriangle(triProjected, this.colors.line);
       }
     }
