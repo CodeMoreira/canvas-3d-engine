@@ -1,4 +1,12 @@
-# 3D Engine Explanation
+## Javascript 3D Engine
+
+Project demonstrating the basics of 3D graphics in JavaScript.
+
+<img src="./imgs/cube.png" alt="3D Cube Image" width="200" />
+<img src="./imgs/cube_with_triangles.png" alt="3D Cube With Triangles outlined Image" width="200" />
+<img src="./imgs/only_triangles_cube.png" alt="3D Cube With Only Triangles outlined Image" width="200" />
+
+## 3D Engine Explanation
 
 This project is a basic 3D graphics engine built from scratch in JavaScript. It showcases the fundamental algorithms and calculations needed to render 3D objects onto a 2D screen. Here’s a brief explanation of how it works and the key components involved.
 
