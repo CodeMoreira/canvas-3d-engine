@@ -279,6 +279,8 @@ class Engine3D extends CanvasDraw {
     matRotX[2][2] = Math.cos(this.fTheta * 0.5);
     matRotX[3][3] = 1;
 
+    let vectorTrianglesToRaster = [];
+
     // Process each triangle in the mesh
     for (const tri of this.currentMesh.tris) {
       const triRotatedZ = new Triangle();
@@ -380,15 +382,27 @@ class Engine3D extends CanvasDraw {
             (triProjected.p[i].y + 1.0) * 0.5 * this.screenHeight;
         }
 
-        // Draw the triangle on the canvas
-        this.FillTriangle(triProjected.p, triProjected.color);
-        // Draw the triangle outlined to fill the empty spaces between triangles
-        this.DrawTriangle(triProjected.p, triProjected.color);
+        // Store triangle
+        vectorTrianglesToRaster.push(triProjected);
+      }
+    }
 
-        // Draw the triangle outlines
-        if (this.showTriangles) {
-          this.DrawTriangle(triProjected.p, GenerateColor(this.colors.line));
-        }
+    // Sort triangles from back to front
+    vectorTrianglesToRaster.sort((a, b) => {
+      const z1 = (a.p[0].z + a.p[1].z + a.p[2].z) / 3;
+      const z2 = (b.p[0].z + b.p[1].z + b.p[2].z) / 3;
+      return z2 - z1; // Ordenar do mais distante para o mais próximo
+    });
+
+    for (const triProjected of vectorTrianglesToRaster) {
+      // Draw the triangle on the canvas
+      this.FillTriangle(triProjected.p, triProjected.color);
+      // Draw the triangle outlined to fill the empty spaces between triangles
+      this.DrawTriangle(triProjected.p, triProjected.color);
+
+      // Draw the triangle outlines
+      if (this.showTriangles) {
+        this.DrawTriangle(triProjected.p, GenerateColor(this.colors.line));
       }
     }
   }
