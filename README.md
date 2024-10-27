@@ -74,8 +74,6 @@ triangles.sort((a, b) => {
 });
 ```
 
-```
-
 ### Summary of Key Calculations and Algorithms
 
 - **Rotation Matrix**: Rotates points around an axis.
