@@ -1,12 +1,15 @@
 // 3D engine from scratch
 
+// Colors - only use RGB
+const colors = {
+  base: [0, 0, 0],
+  line: [255, 0, 0],
+  primary: [255, 255, 255],
+};
+
 class CanvasDraw {
   // Textures
-  colors = {
-    base: "black",
-    line: "red",
-    primary: "white",
-  };
+  colors = colors;
 
   constructor(screenWidth, screenHeight) {
     this.screenWidth = screenWidth;
@@ -23,7 +26,7 @@ class CanvasDraw {
   }
 
   clearCanvas() {
-    this.ctx.fillStyle = this.colors.base;
+    this.ctx.fillStyle = GenerateColor(this.colors.base);
     this.ctx.fillRect(0, 0, this.screenWidth, this.screenHeight);
   }
 
@@ -55,18 +58,32 @@ class CanvasDraw {
   }
 }
 
+function GenerateColor([r, g, b], luminosity = 1.0) {
+  const red = r * luminosity;
+  const green = g * luminosity;
+  const blue = b * luminosity;
+  return `rgb(${red}, ${green}, ${blue})`;
+}
+
 // 3D vector constructor
 function Vec3d(x, y, z) {
   return { x, y, z };
 }
 
 // Triangle constructor
-function Triangle(v1, v2, v3) {
-  return [
-    new Vec3d(v1.x, v1.y, v1.z),
-    new Vec3d(v2.x, v2.y, v2.z),
-    new Vec3d(v3.x, v3.y, v3.z),
-  ];
+function Triangle(v1, v2, v3, color = colors.primary) {
+  function vOrZ(v, n) {
+    return v?.[n] || 0;
+  }
+
+  return {
+    p: [
+      new Vec3d(vOrZ(v1, 0), vOrZ(v1, 1), vOrZ(v1, 2)),
+      new Vec3d(vOrZ(v2, 0), vOrZ(v2, 1), vOrZ(v2, 2)),
+      new Vec3d(vOrZ(v3, 0), vOrZ(v3, 1), vOrZ(v3, 2)),
+    ],
+    color,
+  };
 }
 
 // Matrix 4x4
@@ -85,6 +102,8 @@ function Mesh() {
 }
 
 class Engine3D extends CanvasDraw {
+  showTriangles = false;
+
   meshCube = new Mesh();
   matProj = new Mat4x4();
   fTheta = 0.0;
@@ -102,66 +121,18 @@ class Engine3D extends CanvasDraw {
   OnUserCreate() {
     // Define the 3D cube model with triangles representing each face
     this.meshCube.tris = [
-      new Triangle(
-        { x: 0.0, y: 0.0, z: 0.0 },
-        { x: 0.0, y: 1.0, z: 0.0 },
-        { x: 1.0, y: 1.0, z: 0.0 }
-      ),
-      new Triangle(
-        { x: 0.0, y: 0.0, z: 0.0 },
-        { x: 1.0, y: 1.0, z: 0.0 },
-        { x: 1.0, y: 0.0, z: 0.0 }
-      ),
-      new Triangle(
-        { x: 1.0, y: 0.0, z: 0.0 },
-        { x: 1.0, y: 1.0, z: 0.0 },
-        { x: 1.0, y: 1.0, z: 1.0 }
-      ),
-      new Triangle(
-        { x: 1.0, y: 0.0, z: 0.0 },
-        { x: 1.0, y: 1.0, z: 1.0 },
-        { x: 1.0, y: 0.0, z: 1.0 }
-      ),
-      new Triangle(
-        { x: 1.0, y: 0.0, z: 1.0 },
-        { x: 1.0, y: 1.0, z: 1.0 },
-        { x: 0.0, y: 1.0, z: 1.0 }
-      ),
-      new Triangle(
-        { x: 1.0, y: 0.0, z: 1.0 },
-        { x: 0.0, y: 1.0, z: 1.0 },
-        { x: 0.0, y: 0.0, z: 1.0 }
-      ),
-      new Triangle(
-        { x: 0.0, y: 0.0, z: 1.0 },
-        { x: 0.0, y: 1.0, z: 1.0 },
-        { x: 0.0, y: 1.0, z: 0.0 }
-      ),
-      new Triangle(
-        { x: 0.0, y: 0.0, z: 1.0 },
-        { x: 0.0, y: 1.0, z: 0.0 },
-        { x: 0.0, y: 0.0, z: 0.0 }
-      ),
-      new Triangle(
-        { x: 0.0, y: 1.0, z: 0.0 },
-        { x: 0.0, y: 1.0, z: 1.0 },
-        { x: 1.0, y: 1.0, z: 1.0 }
-      ),
-      new Triangle(
-        { x: 0.0, y: 1.0, z: 0.0 },
-        { x: 1.0, y: 1.0, z: 1.0 },
-        { x: 1.0, y: 1.0, z: 0.0 }
-      ),
-      new Triangle(
-        { x: 1.0, y: 0.0, z: 1.0 },
-        { x: 0.0, y: 0.0, z: 1.0 },
-        { x: 0.0, y: 0.0, z: 0.0 }
-      ),
-      new Triangle(
-        { x: 1.0, y: 0.0, z: 1.0 },
-        { x: 0.0, y: 0.0, z: 0.0 },
-        { x: 1.0, y: 0.0, z: 0.0 }
-      ),
+      new Triangle([0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [1.0, 1.0, 0.0]),
+      new Triangle([0.0, 0.0, 0.0], [1.0, 1.0, 0.0], [1.0, 0.0, 0.0]),
+      new Triangle([1.0, 0.0, 0.0], [1.0, 1.0, 0.0], [1.0, 1.0, 1.0]),
+      new Triangle([1.0, 0.0, 0.0], [1.0, 1.0, 1.0], [1.0, 0.0, 1.0]),
+      new Triangle([1.0, 0.0, 1.0], [1.0, 1.0, 1.0], [0.0, 1.0, 1.0]),
+      new Triangle([1.0, 0.0, 1.0], [0.0, 1.0, 1.0], [0.0, 0.0, 1.0]),
+      new Triangle([0.0, 0.0, 1.0], [0.0, 1.0, 1.0], [0.0, 1.0, 0.0]),
+      new Triangle([0.0, 0.0, 1.0], [0.0, 1.0, 0.0], [0.0, 0.0, 0.0]),
+      new Triangle([0.0, 1.0, 0.0], [0.0, 1.0, 1.0], [1.0, 1.0, 1.0]),
+      new Triangle([0.0, 1.0, 0.0], [1.0, 1.0, 1.0], [1.0, 1.0, 0.0]),
+      new Triangle([1.0, 0.0, 1.0], [0.0, 0.0, 1.0], [0.0, 0.0, 0.0]),
+      new Triangle([1.0, 0.0, 1.0], [0.0, 0.0, 0.0], [1.0, 0.0, 0.0]),
     ];
 
     // Projection matrix setup for converting 3D coordinates to 2D screen space
@@ -204,38 +175,38 @@ class Engine3D extends CanvasDraw {
 
     // Process each triangle in the mesh
     for (const tri of this.meshCube.tris) {
-      const triRotatedZ = new Triangle({}, {}, {});
-      const triRotatedZX = new Triangle({}, {}, {});
-      const triProjected = new Triangle({}, {}, {});
+      const triRotatedZ = new Triangle();
+      const triRotatedZX = new Triangle();
+      const triProjected = new Triangle();
 
       // Rotate triangle in Z-axis
-      this.MultiplyMatrixVector(tri[0], triRotatedZ[0], matRotZ);
-      this.MultiplyMatrixVector(tri[1], triRotatedZ[1], matRotZ);
-      this.MultiplyMatrixVector(tri[2], triRotatedZ[2], matRotZ);
+      this.MultiplyMatrixVector(tri.p[0], triRotatedZ.p[0], matRotZ);
+      this.MultiplyMatrixVector(tri.p[1], triRotatedZ.p[1], matRotZ);
+      this.MultiplyMatrixVector(tri.p[2], triRotatedZ.p[2], matRotZ);
 
       // Rotate triangle in X-axis
-      this.MultiplyMatrixVector(triRotatedZ[0], triRotatedZX[0], matRotX);
-      this.MultiplyMatrixVector(triRotatedZ[1], triRotatedZX[1], matRotX);
-      this.MultiplyMatrixVector(triRotatedZ[2], triRotatedZX[2], matRotX);
+      this.MultiplyMatrixVector(triRotatedZ.p[0], triRotatedZX.p[0], matRotX);
+      this.MultiplyMatrixVector(triRotatedZ.p[1], triRotatedZX.p[1], matRotX);
+      this.MultiplyMatrixVector(triRotatedZ.p[2], triRotatedZX.p[2], matRotX);
 
       // Translate triangle along Z-axis to create depth
       const triTranslated = triRotatedZX;
-      triTranslated[0].z += 3.0;
-      triTranslated[1].z += 3.0;
-      triTranslated[2].z += 3.0;
+      triTranslated.p[0].z += 3.0;
+      triTranslated.p[1].z += 3.0;
+      triTranslated.p[2].z += 3.0;
 
       // Calculate triangle normal
       const normal = new Vec3d();
       const line1 = new Vec3d();
       const line2 = new Vec3d();
 
-      line1.x = triTranslated[1].x - triTranslated[0].x;
-      line1.y = triTranslated[1].y - triTranslated[0].y;
-      line1.z = triTranslated[1].z - triTranslated[0].z;
+      line1.x = triTranslated.p[1].x - triTranslated.p[0].x;
+      line1.y = triTranslated.p[1].y - triTranslated.p[0].y;
+      line1.z = triTranslated.p[1].z - triTranslated.p[0].z;
 
-      line2.x = triTranslated[2].x - triTranslated[0].x;
-      line2.y = triTranslated[2].y - triTranslated[0].y;
-      line2.z = triTranslated[2].z - triTranslated[0].z;
+      line2.x = triTranslated.p[2].x - triTranslated.p[0].x;
+      line2.y = triTranslated.p[2].y - triTranslated.p[0].y;
+      line2.z = triTranslated.p[2].z - triTranslated.p[0].z;
 
       normal.x = line1.y * line2.z - line1.z * line2.y;
       normal.y = line1.z * line2.x - line1.x * line2.z;
@@ -250,39 +221,68 @@ class Engine3D extends CanvasDraw {
 
       // Skip triangle if it is not front facing
       if (
-        normal.x * (triTranslated[0].x - this.vCamera.x) +
-          normal.y * (triTranslated[0].y - this.vCamera.y) +
-          normal.z * (triTranslated[0].z - this.vCamera.z) <
+        normal.x * (triTranslated.p[0].x - this.vCamera.x) +
+          normal.y * (triTranslated.p[0].y - this.vCamera.y) +
+          normal.z * (triTranslated.p[0].z - this.vCamera.z) <
         0
       ) {
+        // Ilumination
+        const light_direction = new Vec3d(0.0, 0.0, -1.0);
+        const len = Math.sqrt(
+          light_direction.x * light_direction.x +
+            light_direction.y * light_direction.y +
+            light_direction.z * light_direction.z
+        );
+        light_direction.x /= len;
+        light_direction.y /= len;
+        light_direction.z /= len;
+
+        let dp =
+          normal.x * light_direction.x +
+          normal.y * light_direction.y +
+          normal.z * light_direction.z;
+
+        // Clamp to 0 - 1
+        dp = Math.max(0.0, Math.min(dp, 1.0));
+
+        triTranslated.color = GenerateColor(this.colors.primary, dp);
+
         // Project the translated triangle from 3D space to 2D screen space
         this.MultiplyMatrixVector(
-          triTranslated[0],
-          triProjected[0],
+          triTranslated.p[0],
+          triProjected.p[0],
           this.matProj
         );
         this.MultiplyMatrixVector(
-          triTranslated[1],
-          triProjected[1],
+          triTranslated.p[1],
+          triProjected.p[1],
           this.matProj
         );
         this.MultiplyMatrixVector(
-          triTranslated[2],
-          triProjected[2],
+          triTranslated.p[2],
+          triProjected.p[2],
           this.matProj
         );
+        triProjected.color = triTranslated.color;
+        triProjected.luminosity = triTranslated.luminosity;
 
         // Scale into view by adjusting to screen space coordinates
         for (let i = 0; i < 3; i++) {
-          triProjected[i].x =
-            (triProjected[i].x + 1.0) * 0.5 * this.screenWidth;
-          triProjected[i].y =
-            (triProjected[i].y + 1.0) * 0.5 * this.screenHeight;
+          triProjected.p[i].x =
+            (triProjected.p[i].x + 1.0) * 0.5 * this.screenWidth;
+          triProjected.p[i].y =
+            (triProjected.p[i].y + 1.0) * 0.5 * this.screenHeight;
         }
 
         // Draw the triangle on the canvas
-        this.FillTriangle(triProjected, this.colors.primary);
-        this.DrawTriangle(triProjected, this.colors.line);
+        this.FillTriangle(triProjected.p, triTranslated.color);
+        // Draw the triangle outlined to fill the empty spaces between triangles
+        this.DrawTriangle(triProjected.p, triTranslated.color);
+
+        // Draw the triangle outlines
+        if (this.showTriangles) {
+          this.DrawTriangle(triProjected.p, GenerateColor(this.colors.line));
+        }
       }
     }
   }
@@ -317,6 +317,10 @@ class Engine3D extends CanvasDraw {
 
   Stop() {
     clearInterval(this.engineInterval);
+  }
+
+  ToggleTriangles() {
+    this.showTriangles = !this.showTriangles;
   }
 }
 
