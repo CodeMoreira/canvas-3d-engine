@@ -132,14 +132,15 @@ function ConvertObjFileToMesh(text) {
 }
 
 class Engine3D extends CanvasDraw {
-  showTriangles = false;
+  showTrianglesLine = false;
+  showFaces = true;
 
   currentMesh = new Mesh();
   matProj = new Mat4x4();
   fTheta = 0.0;
 
   vCamera = new Vec3d(0.0, 0.0, 0.0);
-  vZoom = 8.0;
+  vZoom = 3.0;
 
   constructor({ screenWidth, screenHeight, appName, tickRate }) {
     super(screenWidth, screenHeight);
@@ -171,12 +172,20 @@ class Engine3D extends CanvasDraw {
     panel.appendChild(label);
 
     // Button to show/hide triangles
-    const buttonToggleTriangles = document.createElement("button");
-    buttonToggleTriangles.innerText = "Show/Hide Triangles";
-    buttonToggleTriangles.addEventListener("click", () => {
-      this.showTriangles = !this.showTriangles;
+    const buttonToggleTrianglesLine = document.createElement("button");
+    buttonToggleTrianglesLine.innerText = "Show/Hide Triangles";
+    buttonToggleTrianglesLine.addEventListener("click", () => {
+      this.ToggleTrianglesLine();
     });
-    panel.appendChild(buttonToggleTriangles);
+    panel.appendChild(buttonToggleTrianglesLine);
+
+    // Button to show/hide faces
+    const buttonToggleFaces = document.createElement("button");
+    buttonToggleFaces.innerText = "Show/Hide Faces";
+    buttonToggleFaces.addEventListener("click", () => {
+      this.ToggleFaces();
+    });
+    panel.appendChild(buttonToggleFaces);
 
     // button to zoom in
     const zoomIn = document.createElement("button");
@@ -332,7 +341,8 @@ class Engine3D extends CanvasDraw {
         normal.x * (triTranslated.p[0].x - this.vCamera.x) +
           normal.y * (triTranslated.p[0].y - this.vCamera.y) +
           normal.z * (triTranslated.p[0].z - this.vCamera.z) <
-        0
+          0 ||
+        !this.showFaces
       ) {
         // Ilumination
         const light_direction = new Vec3d(0.0, 0.0, -1.0);
@@ -382,27 +392,36 @@ class Engine3D extends CanvasDraw {
             (triProjected.p[i].y + 1.0) * 0.5 * this.screenHeight;
         }
 
-        // Store triangle
-        vectorTrianglesToRaster.push(triProjected);
+        if (this.showFaces) {
+          // Store triangle
+          vectorTrianglesToRaster.push(triProjected);
+        } else {
+          // Draw all triangle outlines
+          this.DrawTriangle(triProjected.p, GenerateColor(this.colors.line));
+        }
       }
     }
 
-    // Sort triangles from back to front
-    vectorTrianglesToRaster.sort((a, b) => {
-      const z1 = (a.p[0].z + a.p[1].z + a.p[2].z) / 3;
-      const z2 = (b.p[0].z + b.p[1].z + b.p[2].z) / 3;
-      return z2 - z1; // Ordenar do mais distante para o mais próximo
-    });
+    if (this.showFaces) {
+      // Sort triangles from back to front
+      vectorTrianglesToRaster.sort((a, b) => {
+        const z1 = (a.p[0].z + a.p[1].z + a.p[2].z) / 3;
+        const z2 = (b.p[0].z + b.p[1].z + b.p[2].z) / 3;
+        return z2 - z1; // Ordenar do mais distante para o mais próximo
+      });
 
-    for (const triProjected of vectorTrianglesToRaster) {
-      // Draw the triangle on the canvas
-      this.FillTriangle(triProjected.p, triProjected.color);
-      // Draw the triangle outlined to fill the empty spaces between triangles
-      this.DrawTriangle(triProjected.p, triProjected.color);
+      for (const triProjected of vectorTrianglesToRaster) {
+        if (this.showFaces) {
+          // Draw the triangle on the canvas
+          this.FillTriangle(triProjected.p, triProjected.color);
+          // Draw the triangle outlined to fill the empty spaces between triangles
+          this.DrawTriangle(triProjected.p, triProjected.color);
+        }
 
-      // Draw the triangle outlines
-      if (this.showTriangles) {
-        this.DrawTriangle(triProjected.p, GenerateColor(this.colors.line));
+        // Draw the visible triangle outlines
+        if (this.showTrianglesLine) {
+          this.DrawTriangle(triProjected.p, GenerateColor(this.colors.line));
+        }
       }
     }
   }
@@ -439,8 +458,12 @@ class Engine3D extends CanvasDraw {
     clearInterval(this.engineInterval);
   }
 
-  ToggleTriangles() {
-    this.showTriangles = !this.showTriangles;
+  ToggleTrianglesLine() {
+    this.showTrianglesLine = !this.showTrianglesLine;
+  }
+
+  ToggleFaces() {
+    this.showFaces = !this.showFaces;
   }
 }
 
