@@ -211,31 +211,59 @@ class Engine3D extends CanvasDraw {
       triTranslated[1].z += 3.0;
       triTranslated[2].z += 3.0;
 
-      // Project the translated triangle from 3D space to 2D screen space
-      this.MultiplyMatrixVector(
-        triTranslated[0],
-        triProjected[0],
-        this.matProj
-      );
-      this.MultiplyMatrixVector(
-        triTranslated[1],
-        triProjected[1],
-        this.matProj
-      );
-      this.MultiplyMatrixVector(
-        triTranslated[2],
-        triProjected[2],
-        this.matProj
-      );
+      // Calculate triangle normal
+      const normal = new Vec3d();
+      const line1 = new Vec3d();
+      const line2 = new Vec3d();
 
-      // Scale into view by adjusting to screen space coordinates
-      for (let i = 0; i < 3; i++) {
-        triProjected[i].x = (triProjected[i].x + 1.0) * 0.5 * this.screenWidth;
-        triProjected[i].y = (triProjected[i].y + 1.0) * 0.5 * this.screenHeight;
+      line1.x = triTranslated[1].x - triTranslated[0].x;
+      line1.y = triTranslated[1].y - triTranslated[0].y;
+      line1.z = triTranslated[1].z - triTranslated[0].z;
+
+      line2.x = triTranslated[2].x - triTranslated[0].x;
+      line2.y = triTranslated[2].y - triTranslated[0].y;
+      line2.z = triTranslated[2].z - triTranslated[0].z;
+
+      normal.x = line1.y * line2.z - line1.z * line2.y;
+      normal.y = line1.z * line2.x - line1.x * line2.z;
+      normal.z = line1.x * line2.y - line1.y * line2.x;
+
+      const len = Math.sqrt(
+        normal.x * normal.x + normal.y * normal.y + normal.z * normal.z
+      );
+      normal.x /= len;
+      normal.y /= len;
+      normal.z /= len;
+
+      if (normal.z < 0) {
+        // Project the translated triangle from 3D space to 2D screen space
+        this.MultiplyMatrixVector(
+          triTranslated[0],
+          triProjected[0],
+          this.matProj
+        );
+        this.MultiplyMatrixVector(
+          triTranslated[1],
+          triProjected[1],
+          this.matProj
+        );
+        this.MultiplyMatrixVector(
+          triTranslated[2],
+          triProjected[2],
+          this.matProj
+        );
+
+        // Scale into view by adjusting to screen space coordinates
+        for (let i = 0; i < 3; i++) {
+          triProjected[i].x =
+            (triProjected[i].x + 1.0) * 0.5 * this.screenWidth;
+          triProjected[i].y =
+            (triProjected[i].y + 1.0) * 0.5 * this.screenHeight;
+        }
+
+        // Draw the triangle on the canvas
+        this.DrawTriangle(triProjected, this.colors.line);
       }
-
-      // Draw the triangle on the canvas
-      this.DrawTriangle(triProjected, this.colors.line);
     }
   }
 
