@@ -91,3 +91,6 @@ triangles.sort((a, b) => {
 - **Painter’s Algorithm**: Ensures correct rendering order of triangles based on depth.
 
 This project is a fun exploration of 3D graphics basics, showing how complex rendering engines are built from simple mathematical foundations.
+
+## Thanks
+Thank you [javidx9](https://github.com/OneLoneCoder) to record [a serie](https://www.youtube.com/watch?v=ih20l3pJoeU) explaining how to develop a 3D Graphics Engine from scratch using c++.
