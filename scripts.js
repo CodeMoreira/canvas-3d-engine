@@ -78,6 +78,8 @@ class Engine3D extends CanvasDraw {
   matProj = new Mat4x4();
   fTheta = 0.0;
 
+  vCamera = new Vec3d(0.0, 0.0, 0.0);
+
   constructor({ screenWidth, screenHeight, appName, tickRate }) {
     super(screenWidth, screenHeight);
     this.screenWidth = screenWidth;
@@ -235,7 +237,13 @@ class Engine3D extends CanvasDraw {
       normal.y /= len;
       normal.z /= len;
 
-      if (normal.z < 0) {
+      // Skip triangle if it is not front facing
+      if (
+        normal.x * (triTranslated[0].x - this.vCamera.x) +
+          normal.y * (triTranslated[0].y - this.vCamera.y) +
+          normal.z * (triTranslated[0].z - this.vCamera.z) <
+        0
+      ) {
         // Project the translated triangle from 3D space to 2D screen space
         this.MultiplyMatrixVector(
           triTranslated[0],
