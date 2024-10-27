@@ -73,7 +73,9 @@ function Vec3d(x, y, z) {
 // Triangle constructor
 function Triangle(v1, v2, v3, color = colors.primary) {
   function vOrZ(v, n) {
-    return v?.[n] || 0;
+    if (!v) return 0;
+
+    return v[n];
   }
 
   return {
@@ -101,14 +103,43 @@ function Mesh() {
   return { tris: [] };
 }
 
+function ConvertObjFileToMesh(text) {
+  const lines = text.split("\n");
+  const vertices = [];
+  const triangles = [];
+
+  for (const line of lines) {
+    // check if line is a vertex
+    if (line.startsWith("v ")) {
+      const vertex = line.split(" ");
+      const x = parseFloat(vertex[1]);
+      const y = parseFloat(vertex[2]);
+      const z = parseFloat(vertex[3]);
+      vertices.push([x, y, z]);
+    }
+
+    // check if line is a triangle
+    if (line.startsWith("f ")) {
+      const triangle = line.split(" ");
+      const v1 = parseInt(triangle[1].split("/")[0]) - 1;
+      const v2 = parseInt(triangle[2].split("/")[0]) - 1;
+      const v3 = parseInt(triangle[3].split("/")[0]) - 1;
+      triangles.push(new Triangle(vertices[v1], vertices[v2], vertices[v3]));
+    }
+  }
+
+  return { tris: triangles };
+}
+
 class Engine3D extends CanvasDraw {
   showTriangles = false;
 
-  meshCube = new Mesh();
+  currentMesh = new Mesh();
   matProj = new Mat4x4();
   fTheta = 0.0;
 
   vCamera = new Vec3d(0.0, 0.0, 0.0);
+  vZoom = 8.0;
 
   constructor({ screenWidth, screenHeight, appName, tickRate }) {
     super(screenWidth, screenHeight);
@@ -116,11 +147,86 @@ class Engine3D extends CanvasDraw {
     this.screenHeight = screenHeight;
     this.tickRate = tickRate;
     this.appName = appName;
+
+    // Create control panel
+    this.CreateControlPanel();
+  }
+
+  CreateControlPanel() {
+    const panel = document.createElement("div");
+    panel.style.width = "100%";
+    panel.style.height = "100%";
+    panel.style.display = "flex";
+    panel.style.flexDirection = "column";
+    panel.style.alignItems = "center";
+    panel.style.padding = "16px";
+    panel.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
+    panel.style.color = "white";
+    panel.style.fontSize = "24px";
+    panel.style.fontFamily = "monospace";
+    document.body.appendChild(panel);
+
+    const label = document.createElement("div");
+    label.innerText = this.appName;
+    panel.appendChild(label);
+
+    // Button to show/hide triangles
+    const buttonToggleTriangles = document.createElement("button");
+    buttonToggleTriangles.innerText = "Show/Hide Triangles";
+    buttonToggleTriangles.addEventListener("click", () => {
+      this.showTriangles = !this.showTriangles;
+    });
+    panel.appendChild(buttonToggleTriangles);
+
+    // button to zoom in
+    const zoomIn = document.createElement("button");
+    zoomIn.innerText = "Zoom In";
+    zoomIn.addEventListener("click", () => {
+      this.vZoom *= 0.9;
+    });
+    panel.appendChild(zoomIn);
+
+    // button to zoom out
+    const zoomOut = document.createElement("button");
+    zoomOut.innerText = "Zoom Out";
+    zoomOut.addEventListener("click", () => {
+      this.vZoom *= 1.1;
+    });
+    panel.appendChild(zoomOut);
+
+    // button to reset zoom
+    const zoomReset = document.createElement("button");
+    zoomReset.innerText = "Reset Zoom";
+    zoomReset.addEventListener("click", () => {
+      this.vZoom = 8.0;
+    });
+    panel.appendChild(zoomReset);
+
+    // upload .obj file
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.addEventListener("change", (event) => {
+      const file = event.target.files[0];
+      // check if file extension is .obj
+      if (!file.name.toLowerCase().endsWith(".obj")) {
+        alert("Please upload a .obj file");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const text = event.target.result;
+        const mesh = ConvertObjFileToMesh(text);
+        this.currentMesh = mesh;
+      };
+      reader.readAsText(file);
+    });
+    panel.appendChild(fileInput);
   }
 
   OnUserCreate() {
     // Define the 3D cube model with triangles representing each face
-    this.meshCube.tris = [
+    this.currentMesh.tris = [
       new Triangle([0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [1.0, 1.0, 0.0]),
       new Triangle([0.0, 0.0, 0.0], [1.0, 1.0, 0.0], [1.0, 0.0, 0.0]),
       new Triangle([1.0, 0.0, 0.0], [1.0, 1.0, 0.0], [1.0, 1.0, 1.0]),
@@ -174,7 +280,7 @@ class Engine3D extends CanvasDraw {
     matRotX[3][3] = 1;
 
     // Process each triangle in the mesh
-    for (const tri of this.meshCube.tris) {
+    for (const tri of this.currentMesh.tris) {
       const triRotatedZ = new Triangle();
       const triRotatedZX = new Triangle();
       const triProjected = new Triangle();
@@ -191,9 +297,9 @@ class Engine3D extends CanvasDraw {
 
       // Translate triangle along Z-axis to create depth
       const triTranslated = triRotatedZX;
-      triTranslated.p[0].z += 3.0;
-      triTranslated.p[1].z += 3.0;
-      triTranslated.p[2].z += 3.0;
+      triTranslated.p[0].z += this.vZoom;
+      triTranslated.p[1].z += this.vZoom;
+      triTranslated.p[2].z += this.vZoom;
 
       // Calculate triangle normal
       const normal = new Vec3d();
@@ -275,9 +381,9 @@ class Engine3D extends CanvasDraw {
         }
 
         // Draw the triangle on the canvas
-        this.FillTriangle(triProjected.p, triTranslated.color);
+        this.FillTriangle(triProjected.p, triProjected.color);
         // Draw the triangle outlined to fill the empty spaces between triangles
-        this.DrawTriangle(triProjected.p, triTranslated.color);
+        this.DrawTriangle(triProjected.p, triProjected.color);
 
         // Draw the triangle outlines
         if (this.showTriangles) {
